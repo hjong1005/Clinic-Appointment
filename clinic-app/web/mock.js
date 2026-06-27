@@ -198,7 +198,7 @@ export async function getDashboard() {
   await wait()
   const now = new Date()
   const start = new Date(now); start.setHours(0,0,0,0)
-  const weekEnd = new Date(start); weekEnd.setDate(weekEnd.getDate()+7)
+  const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate()+7)
   const all = await listAppointments({ from: start.toISOString(), to: new Date(start.getTime()+8*864e5).toISOString() })
   const today = all.filter(a => { const d=new Date(a.start_time); return d.toDateString()===now.toDateString() })
   const week = all.filter(a => { const d=new Date(a.start_time); return d>=now && d<weekEnd })

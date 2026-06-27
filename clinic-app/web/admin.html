@@ -32,7 +32,8 @@
 
   header.bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--paper);min-height:60px}
   .bar-title{font-family:"Fraunces",serif;font-weight:500;font-size:20px;margin-right:8px}
-  .nav{display:flex;gap:2px} .navitem{padding:8px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--muted)}
+  .nav{display:flex;gap:2px} .navitem{padding:8px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--muted);text-decoration:none}
+  a.navitem:link,a.navitem:visited{color:var(--muted)}
   .navitem:hover{background:var(--line-soft)} .navitem.on{background:var(--pine-bg);color:var(--pine-700)}
   .spacer{flex:1} .who{font-size:13px;color:var(--muted)} .role-pill{font-size:11px;font-weight:600;color:var(--pine-700);background:var(--pine-bg);padding:2px 9px;border-radius:20px;margin-left:6px;text-transform:capitalize}
 
@@ -118,17 +119,22 @@ function renderLogin(){
 
 function renderShell(){
   const admin = state.me.role==='admin'
-  const tabs = [['dashboard','Dashboard']].concat(admin?[['users','Users'],['settings','Settings'],['audit','Audit log']]:[])
+  const tabs = admin?[['users','Users'],['settings','Settings'],['audit','Audit log']]:[]
   $('root').innerHTML=`
     <header class="bar">
       <span class="bar-title">Clinic</span>
-      <nav class="nav">${tabs.map(([v,l])=>`<button class="navitem" data-v="${v}">${l}</button>`).join('')}</nav>
+      <nav class="nav">
+        <button class="navitem" data-v="dashboard">Dashboard</button>
+        <a class="navitem" href="calendar.html">Appointments</a>
+        <a class="navitem" href="patients.html">Patients</a>
+        ${tabs.map(([v,l])=>`<button class="navitem" data-v="${v}">${l}</button>`).join('')}
+      </nav>
       <div class="spacer"></div>
       <span class="who">${esc(state.me.full_name)}<span class="role-pill">${esc(state.me.role)}</span></span>
       <button class="btn btn-quiet" id="signout">Sign out</button>
     </header>
     <div id="main"></div>`
-  document.querySelectorAll('.navitem').forEach(b=>b.onclick=()=>show(b.dataset.v))
+  document.querySelectorAll('.navitem[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v))
   $('signout').onclick=async()=>{ await db.signOut(); location.reload() }
 }
 function demoBanner(){ const m=$('main'); if(!m)return; const b=document.createElement('div')

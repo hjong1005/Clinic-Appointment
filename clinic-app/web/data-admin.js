@@ -19,7 +19,7 @@ export async function getDashboard() {
   const now = new Date()
   const start = new Date(now); start.setHours(0,0,0,0)
   const horizon = new Date(start); horizon.setDate(horizon.getDate()+8)
-  const weekEnd = new Date(start); weekEnd.setDate(weekEnd.getDate()+7)
+  const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate()+7)
 
   const appts = await listAppointments({ from: start.toISOString(), to: horizon.toISOString() })
   const isToday = (a) => { const d=new Date(a.start_time); return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth() && d.getDate()===now.getDate() }
