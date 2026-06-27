@@ -198,6 +198,7 @@ function shift(dir){
 async function refresh(){ $('rangeLabel') && ($('rangeLabel').textContent=rangeLabel()); await loadAppts(); renderBody() }
 
 function demoBanner(){ const m=$('main'); if(!m)return; const b=document.createElement('div')
+  b.className='demo-banner'
   b.textContent='Demo mode — sample data, nothing is saved. Add Supabase keys to connect the real database.'
   b.style.cssText='background:var(--amber-bg);color:var(--amber);padding:8px 18px;font-size:13px;text-align:center;border-bottom:1px solid #EAD9BC'; m.prepend(b) }
 
@@ -209,7 +210,7 @@ function renderBody(){
 
 // ---- day / week grid (engine adapted from clients.html) -------------
 function renderTimeGrid(){
-  const main=$('main'); const banner=main.querySelector('div[style]'); // keep demo banner if present
+  const main=$('main'); const banner=main.querySelector('.demo-banner'); // keep demo banner if present
   const now=new Date()
   const days = state.view==='day' ? [startOfDay(state.anchor)]
     : Array.from({length:7},(_,i)=>addDays(startOfWeek(state.anchor),i))
@@ -263,7 +264,7 @@ function layoutLanes(evs){
 
 // ---- month grid ------------------------------------------------------
 function renderMonth(){
-  const main=$('main'); const banner=main.querySelector('div[style]')
+  const main=$('main'); const banner=main.querySelector('.demo-banner')
   const now=new Date(), first=startOfMonth(state.anchor), gridStart=startOfWeek(first)
   const cells=Array.from({length:42},(_,i)=>addDays(gridStart,i))
   const byDay={}; state.appts.forEach(a=>{ const k=isoLocalDate(new Date(a.start_time)); (byDay[k]=byDay[k]||[]).push(a) })
