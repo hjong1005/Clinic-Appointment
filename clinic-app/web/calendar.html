@@ -43,7 +43,8 @@
   .filter-sel{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:13px}
   .who{font-size:13px;color:var(--muted)} .role-pill{font-size:11px;font-weight:600;color:var(--pine-700);background:var(--pine-bg);padding:2px 9px;border-radius:20px;margin-left:6px;text-transform:capitalize}
 
-  #main{height:calc(100% - 61px)}
+  #root{height:100%;display:flex;flex-direction:column}
+  #main{flex:1;min-height:0}
   .cal{height:100%;overflow:auto;background:var(--surface)}
   .cal-stick{position:sticky;top:0;z-index:6;background:var(--surface)}
   .cal-row{display:flex}
