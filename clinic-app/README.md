@@ -70,8 +70,32 @@ disappear, mirroring what RLS does live.
 - Supabase CLI (only for the Edge Function)
 
 ### 1. Database
-In the Supabase **SQL editor**, run the files in `db/` **in order**:
-`01_schema.sql` → `02_rls.sql` → `03_audit_and_seed.sql` → `04_views.sql` → `05_clinic_settings.sql`.
+
+Set up the database in your Supabase project before running the application.
+
+1. Open your Supabase project and navigate to **SQL Editor**.
+2. Execute the SQL scripts located in the `db/` directory **in the following order**:
+
+   * `01_schema.sql`
+   * `02_rls.sql`
+   * `03_audit_and_seed.sql`
+   * `04_views.sql`
+   * `05_clinic_settings.sql`
+3. For each file:
+
+   * Create a new SQL query in the SQL Editor.
+   * Copy and paste the contents of the SQL file.
+   * Click **Run** (or press **Cmd + Enter** on macOS).
+   * Ensure the script executes successfully before proceeding to the next file.
+4. Verify the database setup:
+
+   * Navigate to **Table Editor** in the Supabase dashboard.
+   * Confirm that the expected tables have been created.
+   * If `03_audit_and_seed.sql` includes seed data, verify that the corresponding tables contain the expected sample records.
+   * Ensure no errors were reported while executing any of the SQL scripts.
+
+> **Note:** The SQL scripts must be executed in the specified order, as each script may depend on database objects created by the preceding scripts.
+
 
 ### 2. Auth settings
 - **Username login** maps to a synthetic email, `username@clinic.local`. Users are created with that scheme (see steps 3–4), so signing in with `admin` resolves to `admin@clinic.local`.

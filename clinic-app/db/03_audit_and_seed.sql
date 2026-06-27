@@ -85,4 +85,4 @@ create trigger appointments_touch
 insert into public.appointment_types (name, duration_minutes, color, is_active) values
   ('Consultation', 30, '#1F5F54', true),
   ('Follow-up',    15, '#A9681E', true),
-  ('Procedure',    60, '#B23B3B', true);
+  ('Accupuncture',    90, '#B23B3B', true);
