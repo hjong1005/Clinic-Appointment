@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin · M3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF8F4; --surface:#FFFFFF; --ink:#211E1B; --muted:#736B62; --faint:#A29A8F;
+    --line:#E8E2D9; --line-soft:#F0EBE3; --pine:#1F5F54; --pine-700:#184B43; --pine-bg:#EAF1EF;
+    --amber:#A9681E; --amber-bg:#FBF1E0; --danger:#B23B3B; --danger-bg:#FBEDED;
+    --shadow:0 1px 2px rgba(33,30,27,.04), 0 8px 28px rgba(33,30,27,.06); --radius:14px;
+    --mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:"Inter",system-ui,sans-serif;font-size:15px;line-height:1.5;overflow:hidden}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,textarea,select{font-family:inherit;font-size:15px;color:var(--ink)}
+  :focus-visible{outline:2px solid var(--pine);outline-offset:2px;border-radius:6px}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-weight:500;font-size:14px}
+  .btn-primary{background:var(--pine);color:#fff} .btn-primary:hover{background:var(--pine-700)}
+  .btn-ghost{border:1px solid var(--line);background:var(--surface)} .btn-ghost:hover{border-color:var(--faint)}
+  .btn-quiet{color:var(--muted);padding:7px 10px} .btn-quiet:hover{color:var(--ink);background:var(--line-soft)}
+  .btn-danger{color:var(--danger)} .btn-danger:hover{background:var(--danger-bg)}
+  .field{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+  .field:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px var(--pine-bg)}
+  select.field{appearance:none}
+
+  header.bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--paper);min-height:60px}
+  .bar-title{font-family:"Fraunces",serif;font-weight:500;font-size:20px;margin-right:8px}
+  .nav{display:flex;gap:2px} .navitem{padding:8px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--muted)}
+  .navitem:hover{background:var(--line-soft)} .navitem.on{background:var(--pine-bg);color:var(--pine-700)}
+  .spacer{flex:1} .who{font-size:13px;color:var(--muted)} .role-pill{font-size:11px;font-weight:600;color:var(--pine-700);background:var(--pine-bg);padding:2px 9px;border-radius:20px;margin-left:6px;text-transform:capitalize}
+
+  #main{height:calc(100% - 61px);overflow-y:auto}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 28px 60px}
+  .eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:0 0 12px}
+  h2.title{font-family:"Fraunces",serif;font-size:24px;font-weight:500;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:14px}
+
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:26px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .stat .n{font-family:"Fraunces",serif;font-size:34px;font-weight:500;line-height:1}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:6px}
+  .quick{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line-soft)}
+  .row:first-child{border-top:none}
+  .row .time{font-variant-numeric:tabular-nums;font-weight:600;min-width:78px}
+  .row .who2{flex:1;min-width:0} .row .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .row .mt{font-size:12.5px;color:var(--muted)}
+  .pill{font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px}
+  .pill.ok{color:var(--pine-700);background:var(--pine-bg)} .pill.no{color:var(--amber);background:var(--amber-bg)}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--line)}
+  td{padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .swatch{width:14px;height:14px;border-radius:4px;display:inline-block;vertical-align:-2px;margin-right:8px}
+  .mini-sel{padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px}
+  .switch{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);cursor:pointer}
+  .dot{width:34px;height:20px;border-radius:20px;background:var(--line);position:relative;transition:.15s}
+  .dot::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch.on .dot{background:var(--pine)} .switch.on .dot::after{left:16px}
+  .actionbar{display:flex;justify-content:space-between;align-items:center;margin:30px 0 12px}
+  .actionbar h3{font-family:"Fraunces",serif;font-weight:500;font-size:17px;margin:0}
+  .filters{display:flex;gap:8px;margin-bottom:14px}
+
+  .scrim{position:fixed;inset:0;background:rgba(33,30,27,.34);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+  .scrim.open{display:flex}
+  .modal{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:440px;padding:24px;max-height:90vh;overflow-y:auto}
+  .modal h3{font-family:"Fraunces",serif;font-weight:500;font-size:20px;margin:0 0 16px}
+  .lbl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 5px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+  .err{color:var(--danger);font-size:13px;min-height:16px;margin-top:8px}
+  .empty{text-align:center;color:var(--muted);padding:36px 18px}
+  .center{height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:400px;text-align:center} .card h1{font-family:"Fraunces",serif;font-weight:500;font-size:26px;margin:0 0 6px} .card p{color:var(--muted);margin:0 0 18px;font-size:14px} .card .field{margin-bottom:10px}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;z-index:60;transition:.2s;pointer-events:none}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="root"><div class="center"><div class="card"><p>Loading…</p></div></div></div>
+<div class="scrim" id="scrim"><div class="modal" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script src="./config.js"></script>
+<script type="module">
+const useReal = !!(window.SUPABASE_URL && window.SUPABASE_ANON)
+const db = await import(useReal ? './data-admin.js' : './mock.js')
+
+const $ = (id)=>document.getElementById(id)
+const esc = (s)=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))
+const fmtTime=(s)=> new Date(s).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})
+const fmtDT=(s)=> new Date(s).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
+let toastT; const toast=(m)=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200)}
+async function safe(fn){try{return await fn()}catch(e){toast(e.message||'Something went wrong');return null}}
+
+const state={ me:null, view:'dashboard' }
+
+const me = await safe(()=>db.getMyProfile())
+if(me){ state.me=me; renderShell(); if(db.IS_MOCK) demoBanner(); show('dashboard') }
+else renderLogin()
+
+function renderLogin(){
+  $('root').innerHTML=`<div class="center"><div class="card"><h1>The Client Book</h1><p>Sign in to the clinic admin.</p>
+    <input class="field" id="u" placeholder="Username"/><input class="field" id="p" type="password" placeholder="Password"/>
+    <button class="btn btn-primary" id="go" style="width:100%;justify-content:center">Sign in</button><div class="err" id="le"></div></div></div>`
+  $('go').onclick=async()=>{try{await db.signIn($('u').value.trim(),$('p').value);location.reload()}catch(e){$('le').textContent=e.message}}
+  $('root').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()})
+}
+
+function renderShell(){
+  const admin = state.me.role==='admin'
+  const tabs = [['dashboard','Dashboard']].concat(admin?[['users','Users'],['settings','Settings'],['audit','Audit log']]:[])
+  $('root').innerHTML=`
+    <header class="bar">
+      <span class="bar-title">Clinic</span>
+      <nav class="nav">${tabs.map(([v,l])=>`<button class="navitem" data-v="${v}">${l}</button>`).join('')}</nav>
+      <div class="spacer"></div>
+      <span class="who">${esc(state.me.full_name)}<span class="role-pill">${esc(state.me.role)}</span></span>
+      <button class="btn btn-quiet" id="signout">Sign out</button>
+    </header>
+    <div id="main"></div>`
+  document.querySelectorAll('.navitem').forEach(b=>b.onclick=()=>show(b.dataset.v))
+  $('signout').onclick=async()=>{ await db.signOut(); location.reload() }
+}
+function demoBanner(){ const m=$('main'); if(!m)return; const b=document.createElement('div')
+  b.textContent='Demo mode — sample data, nothing is saved. Add Supabase keys to connect the real database.'
+  b.style.cssText='background:var(--amber-bg);color:var(--amber);padding:8px 18px;font-size:13px;text-align:center;border-bottom:1px solid #EAD9BC'; m.prepend(b) }
+
+function show(v){
+  state.view=v
+  document.querySelectorAll('.navitem').forEach(b=>b.classList.toggle('on',b.dataset.v===v))
+  if(v!=='dashboard' && state.me.role!=='admin'){ $('main').innerHTML='<div class="wrap"><div class="empty">This area is for admins only.</div></div>'; return }
+  if(v==='dashboard') viewDashboard()
+  else if(v==='users') viewUsers()
+  else if(v==='settings') viewSettings()
+  else if(v==='audit') viewAudit()
+}
+
+// ---------- Dashboard (spec §5.2) ----------
+async function viewDashboard(){
+  $('main').innerHTML='<div class="wrap"><p class="sub">Loading…</p></div>'
+  const d = await safe(()=>db.getDashboard()); if(!d) return
+  const hour=new Date().getHours(), greet = hour<12?'Good morning':hour<18?'Good afternoon':'Good evening'
+  const rows = d.today.length ? d.today.map(a=>`
+    <div class="row"><span class="time mono">${fmtTime(a.start_time)}</span>
+      <div class="who2"><div class="nm">${esc(a.patient?.full_name||'Patient')}</div>
+        <div class="mt">${esc(a.appointment_type?.name||'Appointment')} · ${esc(a.practitioner?.full_name||'—')}</div></div>
+      <span class="pill ${a.is_confirmed?'ok':'no'}">${a.is_confirmed?'Confirmed':'Unconfirmed'}</span></div>`).join('')
+    : '<div class="empty">No appointments scheduled today.</div>'
+  $('main').innerHTML=`<div class="wrap">
+    <p class="eyebrow">Dashboard</p><h2 class="title">${greet}, ${esc(state.me.full_name.split(' ')[0])}.</h2>
+    <p class="sub">Here's where things stand.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">${d.stats.todayCount}</div><div class="l">Appointments today</div></div>
+      <div class="stat"><div class="n">${d.stats.weekCount}</div><div class="l">Upcoming this week</div></div>
+    </div>
+    <div class="quick">
+      <a class="btn btn-primary" href="m2-calendar.html">New appointment</a>
+      <a class="btn btn-ghost" href="m1-patients.html">New patient</a>
+      <a class="btn btn-ghost" href="m1-patients.html">Find patient</a>
+    </div>
+    <div class="actionbar"><h3>Today's schedule</h3></div>
+    <div class="panel">${rows}</div>
+  </div>`
+}
+
+// ---------- Users (spec §5.7) ----------
+async function viewUsers(){
+  $('main').innerHTML='<div class="wrap"><p class="sub">Loading…</p></div>'
+  const users = await safe(()=>db.listUsers()); if(!users) return
+  const body = users.map(u=>`
+    <tr data-id="${u.id}">
+      <td><div class="nm">${esc(u.full_name)}</div><div class="mt">@${esc(u.username||'')}</div></td>
+      <td><select class="mini-sel" data-role="${u.id}"><option value="staff" ${u.role==='staff'?'selected':''}>Staff</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td>
+      <td><span class="switch ${u.is_active?'on':''}" data-active="${u.id}"><span class="dot"></span>${u.is_active?'Active':'Inactive'}</span></td>
+      <td class="mt">${u.created_at?new Date(u.created_at).toLocaleDateString():''}</td>
+    </tr>`).join('')
+  $('main').innerHTML=`<div class="wrap">
+    <p class="eyebrow">Admin</p><h2 class="title">Users</h2>
+    <p class="sub">Create accounts, set roles, and deactivate staff. Deactivating revokes all access immediately.</p>
+    <div class="actionbar"><h3>${users.length} user${users.length===1?'':'s'}</h3><button class="btn btn-primary" id="addUser">+ Add user</button></div>
+    <div class="panel"><table><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>Added</th></tr></thead><tbody>${body}</tbody></table></div>
+  </div>`
+  $('addUser').onclick=addUserModal
+  document.querySelectorAll('[data-role]').forEach(s=>s.onchange=async()=>{ await safe(()=>db.setUserRole(s.dataset.role, s.value)); toast('Role updated') })
+  document.querySelectorAll('[data-active]').forEach(sw=>sw.onclick=async()=>{
+    const turningOn=!sw.classList.contains('on')
+    const ok=await safe(()=>db.setUserActive(sw.dataset.active, turningOn)); if(ok!==null){ toast(turningOn?'Activated':'Deactivated'); viewUsers() }
+  })
+}
+function addUserModal(){
+  modal(`<h3>Add user</h3>
+    <label class="lbl">Full name</label><input class="field" id="u_name"/>
+    <div class="two-col"><div><label class="lbl">Username</label><input class="field" id="u_username" autocomplete="off"/></div>
+      <div><label class="lbl">Role</label><select class="field" id="u_role"><option value="staff">Staff</option><option value="admin">Admin</option></select></div></div>
+    <label class="lbl">Temporary password</label><input class="field" id="u_pw" type="text" placeholder="They can change it later"/>
+    <p class="mt" style="margin-top:10px">Creating the login requires the <span class="mono">create-user</span> Edge Function (it holds the service-role key). In demo mode this just adds a row.</p>
+    <div class="err" id="u_err"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="u_cancel">Cancel</button><button class="btn btn-primary" id="u_save">Create user</button></div>`)
+  $('u_cancel').onclick=closeModal
+  $('u_save').onclick=async()=>{
+    const full_name=$('u_name').value.trim(), username=$('u_username').value.trim(), role=$('u_role').value, password=$('u_pw').value
+    if(!full_name||!username||!password){ $('u_err').textContent='Name, username and a temporary password are required.'; return }
+    try{ await db.createUser({username, full_name, role, password}); closeModal(); toast('User created'); viewUsers() }
+    catch(e){ $('u_err').textContent=e.message }
+  }
+}
+
+// ---------- Settings (spec §5.8) ----------
+async function viewSettings(){
+  $('main').innerHTML='<div class="wrap"><p class="sub">Loading…</p></div>'
+  const [s, types] = await Promise.all([ safe(()=>db.getClinicSettings()), safe(()=>db.listAllTypes()) ])
+  if(!s) return
+  const typeRows = (types||[]).map(t=>`
+    <tr data-id="${t.id}">
+      <td><span class="swatch" style="background:${esc(t.color||'#ccc')}"></span>${esc(t.name)}</td>
+      <td class="mono">${t.duration_minutes} min</td>
+      <td><span class="switch ${t.is_active?'on':''}" data-type="${t.id}"><span class="dot"></span>${t.is_active?'Active':'Hidden'}</span></td>
+      <td style="text-align:right"><button class="btn btn-quiet" data-edit="${t.id}">Edit</button></td>
+    </tr>`).join('')
+  $('main').innerHTML=`<div class="wrap">
+    <p class="eyebrow">Admin</p><h2 class="title">Settings</h2><p class="sub">Clinic profile and the appointment types your calendar offers.</p>
+    <div class="panel" style="padding:18px 20px">
+      <label class="lbl" style="margin-top:0">Clinic name</label><input class="field" id="s_name" value="${esc(s.clinic_name||'')}"/>
+      <label class="lbl">Address</label><input class="field" id="s_addr" value="${esc(s.address||'')}"/>
+      <label class="lbl">Opening hours</label><input class="field" id="s_hours" value="${esc(s.hours||'')}"/>
+      <div class="modal-actions"><button class="btn btn-primary" id="s_save">Save clinic profile</button></div>
+    </div>
+    <div class="actionbar"><h3>Appointment types</h3><button class="btn btn-ghost" id="addType">+ Add type</button></div>
+    <div class="panel"><table><thead><tr><th>Name</th><th>Duration</th><th>Status</th><th></th></tr></thead><tbody>${typeRows||'<tr><td colspan="4" class="empty">No types yet.</td></tr>'}</tbody></table></div>
+  </div>`
+  $('s_save').onclick=async()=>{ const ok=await safe(()=>db.saveClinicSettings({clinic_name:$('s_name').value.trim(),address:$('s_addr').value.trim(),hours:$('s_hours').value.trim()})); if(ok!==null) toast('Clinic profile saved') }
+  $('addType').onclick=()=>typeModal(null)
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>typeModal((types||[]).find(t=>t.id===b.dataset.edit)))
+  document.querySelectorAll('[data-type]').forEach(sw=>sw.onclick=async()=>{ const on=!sw.classList.contains('on'); const ok=await safe(()=>db.setTypeActive(sw.dataset.type,on)); if(ok!==null){ toast(on?'Type active':'Type hidden'); viewSettings() } })
+}
+function typeModal(t){
+  const editing=!!t
+  modal(`<h3>${editing?'Edit type':'Add appointment type'}</h3>
+    <label class="lbl">Name</label><input class="field" id="t_name" value="${esc(t?.name||'')}"/>
+    <div class="two-col"><div><label class="lbl">Duration (min)</label><input class="field" id="t_dur" type="number" min="5" step="5" value="${t?.duration_minutes||30}"/></div>
+      <div><label class="lbl">Colour</label><input class="field" id="t_color" type="color" value="${esc(t?.color||'#1F5F54')}" style="height:44px;padding:4px"/></div></div>
+    <div class="err" id="t_err"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="t_cancel">Cancel</button><button class="btn btn-primary" id="t_save">${editing?'Save':'Add'}</button></div>`)
+  $('t_cancel').onclick=closeModal
+  $('t_save').onclick=async()=>{
+    const name=$('t_name').value.trim(), duration_minutes=parseInt($('t_dur').value,10)||30, color=$('t_color').value
+    if(!name){ $('t_err').textContent='Please name the type.'; return }
+    try{ if(editing) await db.updateType(t.id,{name,duration_minutes,color}); else await db.createType({name,duration_minutes,color}); closeModal(); toast(editing?'Type saved':'Type added'); viewSettings() }
+    catch(e){ $('t_err').textContent=e.message }
+  }
+}
+
+// ---------- Audit log (spec §6) ----------
+async function viewAudit(){
+  $('main').innerHTML='<div class="wrap"><p class="sub">Loading…</p></div>'
+  const log = await safe(()=>db.listAuditLog({})); if(!log) return
+  const rows = log.length ? log.map(g=>`
+    <tr><td class="mono mt">${fmtDT(g.created_at)}</td><td>${esc(g.actor?.full_name||'—')}</td>
+      <td><span class="pill ${g.action==='delete'?'no':'ok'}">${esc(g.action)}</span></td>
+      <td>${esc(g.entity_type)}</td><td class="mono mt">${esc((g.entity_id||'').slice(0,8))}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">No audit entries.</td></tr>'
+  $('main').innerHTML=`<div class="wrap">
+    <p class="eyebrow">Admin</p><h2 class="title">Audit log</h2>
+    <p class="sub">Every create, update, delete, and record view, append-only. Read access is admin-only and enforced in the database.</p>
+    <div class="panel"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Entity</th><th>ID</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`
+}
+
+// ---------- modal plumbing ----------
+const scrim=$('scrim'), modalBox=$('modalBox')
+function modal(html){ modalBox.innerHTML=html; scrim.classList.add('open') }
+function closeModal(){ scrim.classList.remove('open'); modalBox.innerHTML='' }
+scrim.onclick=(e)=>{ if(e.target===scrim) closeModal() }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal() })
+</script>
+</body>
+</html>

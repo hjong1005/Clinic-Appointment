@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+package-lock.json
+
+# secrets / local env — never commit the service-role key
+.env
+.env.*
+scripts/package.json
+
+# OS / editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Note: web/config.js holds only the public anon key (safe to commit).
+# If you'd rather keep it out of version control, uncomment:
+# web/config.js

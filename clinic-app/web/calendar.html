@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appointments · M2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF8F4; --surface:#FFFFFF; --ink:#211E1B; --muted:#736B62; --faint:#A29A8F;
+    --line:#E8E2D9; --line-soft:#F0EBE3; --pine:#1F5F54; --pine-700:#184B43; --pine-bg:#EAF1EF;
+    --amber:#A9681E; --amber-bg:#FBF1E0; --danger:#B23B3B; --danger-bg:#FBEDED;
+    --shadow:0 1px 2px rgba(33,30,27,.04), 0 8px 28px rgba(33,30,27,.06); --radius:14px; --hour:48px;
+    --mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box} html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:"Inter",system-ui,sans-serif;font-size:15px;line-height:1.5;overflow:hidden}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,textarea,select{font-family:inherit;font-size:15px;color:var(--ink)}
+  :focus-visible{outline:2px solid var(--pine);outline-offset:2px;border-radius:6px}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:10px;font-weight:500;font-size:14px}
+  .btn-primary{background:var(--pine);color:#fff} .btn-primary:hover{background:var(--pine-700)}
+  .btn-ghost{border:1px solid var(--line);background:var(--surface)} .btn-ghost:hover{border-color:var(--faint)}
+  .btn-quiet{color:var(--muted);padding:7px 10px} .btn-quiet:hover{color:var(--ink);background:var(--line-soft)}
+  .btn-danger{color:var(--danger)} .btn-danger:hover{background:var(--danger-bg)}
+  .field{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+  .field:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px var(--pine-bg)}
+  select.field{appearance:none}
+
+  header.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--paper);min-height:60px;flex-wrap:wrap}
+  .bar-title{font-family:"Fraunces",serif;font-weight:500;font-size:20px}
+  .spacer{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+  .seg button{padding:6px 13px;font-size:13px;font-weight:500;color:var(--muted)}
+  .seg button.on{background:var(--pine-bg);color:var(--pine-700)}
+  .navbtn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--surface)}
+  .navbtn:hover{border-color:var(--faint)} .navbtn svg{width:16px;height:16px}
+  .today-btn{padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500}
+  .range{font-size:13.5px;color:var(--muted);margin:0 4px;white-space:nowrap}
+  .filter-sel{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:13px}
+  .who{font-size:13px;color:var(--muted)} .role-pill{font-size:11px;font-weight:600;color:var(--pine-700);background:var(--pine-bg);padding:2px 9px;border-radius:20px;margin-left:6px;text-transform:capitalize}
+
+  #main{height:calc(100% - 61px)}
+  .cal{height:100%;overflow:auto;background:var(--surface)}
+  .cal-stick{position:sticky;top:0;z-index:6;background:var(--surface)}
+  .cal-row{display:flex}
+  .gutter-cell{width:52px;flex:none;position:sticky;left:0;z-index:2;background:var(--surface)}
+  .cal-stick .gutter-cell{z-index:7}
+  .dayhead{flex:1 1 0;min-width:80px;text-align:center;padding:10px 4px;border-left:1px solid var(--line-soft)}
+  .dayhead .dow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .dayhead .dnum{font-family:"Fraunces",serif;font-size:20px;font-weight:500;margin-top:2px;width:32px;height:32px;line-height:32px;border-radius:50%;display:inline-block}
+  .dayhead.today .dnum{background:var(--pine);color:#fff} .dayhead.today .dow{color:var(--pine)}
+  .cal-body{display:flex;position:relative}
+  .cal-gutter{width:52px;flex:none;position:sticky;left:0;z-index:2;background:var(--surface)}
+  .hour-cell{height:var(--hour);position:relative}
+  .hour-cell span{position:absolute;top:-7px;right:8px;font-size:10.5px;color:var(--faint)}
+  .day-col{flex:1 1 0;min-width:80px;position:relative;border-left:1px solid var(--line-soft);
+    background-image:repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour) - 1px), var(--line-soft) calc(var(--hour) - 1px), var(--line-soft) var(--hour))}
+  .day-col.today{background-color:#FCFBF7}
+  .now-line{position:absolute;left:0;right:0;height:2px;background:var(--danger);z-index:3}
+  .now-line::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger)}
+  .event{position:absolute;border-radius:7px;padding:3px 7px;overflow:hidden;cursor:pointer;box-shadow:0 1px 2px rgba(33,30,27,.06)}
+  .event .ev-time{font-size:10.5px;opacity:.85} .event .ev-name{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .event .ev-check{position:absolute;top:3px;right:4px;font-size:11px;font-weight:700}
+
+  /* month */
+  .month{padding:10px 14px}
+  .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:10px;overflow:hidden}
+  .mh{background:var(--surface);text-align:center;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:7px 0}
+  .mcell{background:var(--surface);min-height:96px;padding:5px 6px;cursor:pointer}
+  .mcell.dim{background:#FBF9F5;color:var(--faint)}
+  .mcell.today .mdate{background:var(--pine);color:#fff;border-radius:50%}
+  .mdate{font-size:13px;font-weight:600;width:24px;height:24px;line-height:24px;text-align:center;display:inline-block}
+  .mchip{font-size:11px;font-weight:500;border-radius:5px;padding:1px 6px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  .mmore{font-size:10.5px;color:var(--muted);margin-top:2px}
+
+  .scrim{position:fixed;inset:0;background:rgba(33,30,27,.34);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:20px;z-index:40}
+  .scrim.open{display:flex}
+  .modal{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:460px;padding:24px;max-height:90vh;overflow-y:auto}
+  .modal h3{font-family:"Fraunces",serif;font-weight:500;font-size:20px;margin:0 0 16px}
+  .lbl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 5px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px} .modal-actions .left{margin-right:auto}
+  .err{color:var(--danger);font-size:13px;min-height:16px;margin-top:8px}
+  .combo{position:relative}
+  .combo-pop{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;max-height:220px;overflow-y:auto}
+  .combo-opt{padding:8px 10px;border-radius:8px;cursor:pointer} .combo-opt:hover{background:var(--line-soft)} .combo-opt.sel{background:var(--pine-bg)}
+  .co-name{font-weight:500;font-size:14px} .co-sub{font-size:12px;color:var(--muted)}
+  .toggle{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:500;font-size:14px;color:var(--muted)}
+  .toggle.on{background:var(--pine-bg);border-color:#BBD3CC;color:var(--pine-700)}
+  .empty{text-align:center;color:var(--muted);padding:46px 20px}
+  .center{height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:400px;text-align:center} .card h1{font-family:"Fraunces",serif;font-weight:500;font-size:26px;margin:0 0 6px} .card p{color:var(--muted);margin:0 0 18px;font-size:14px} .card .field{margin-bottom:10px}
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;z-index:60;transition:.2s;pointer-events:none}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="root"><div class="center"><div class="card"><p>Loading…</p></div></div></div>
+<div class="scrim" id="scrim"><div class="modal" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script src="./config.js"></script>
+<script type="module">
+const useReal = !!(window.SUPABASE_URL && window.SUPABASE_ANON)
+const db = await import(useReal ? './data-appointments.js' : './mock.js')
+
+const $ = (id)=>document.getElementById(id)
+const esc = (s)=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const HOUR=48
+const startOfDay=(d)=>{const x=new Date(d);x.setHours(0,0,0,0);return x}
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x}
+const startOfWeek=(d)=>addDays(startOfDay(d),-startOfDay(d).getDay())
+const startOfMonth=(d)=>{const x=startOfDay(d);x.setDate(1);return x}
+const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()
+const fmtTime=(d)=>d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})
+const hourLabel=(h)=>{const ap=h>=12?'PM':'AM';const h12=(h%12)||12;return h12+' '+ap}
+const tint=(hex,a='22')=>(hex||'#1F5F54')+a
+let toastT; const toast=(m)=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200)}
+async function safe(fn){try{return await fn()}catch(e){toast(e.message||'Something went wrong');return null}}
+
+const state={ me:null, view:'week', anchor:startOfDay(new Date()), practitionerId:'', practitioners:[], types:[], appts:[] }
+
+// ---- boot ----
+const me = await safe(()=>db.getMyProfile())
+if(me){ state.me=me; await loadRefs(); renderApp(); if(db.IS_MOCK) demoBanner(); await loadAppts(); renderBody() }
+else renderLogin()
+
+function renderLogin(){
+  $('root').innerHTML=`<div class="center"><div class="card"><h1>The Client Book</h1><p>Sign in to the clinic calendar.</p>
+    <input class="field" id="u" placeholder="Username"/><input class="field" id="p" type="password" placeholder="Password"/>
+    <button class="btn btn-primary" id="go" style="width:100%;justify-content:center">Sign in</button><div class="err" id="le"></div></div></div>`
+  $('go').onclick=async()=>{try{await db.signIn($('u').value.trim(),$('p').value);location.reload()}catch(e){$('le').textContent=e.message}}
+  $('root').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()})
+}
+
+async function loadRefs(){
+  ;[state.practitioners, state.types] = await Promise.all([
+    safe(()=>db.listPractitioners()) || [], safe(()=>db.listAppointmentTypes()) || []
+  ])
+}
+
+function rangeBounds(){
+  if(state.view==='day'){ const s=startOfDay(state.anchor); return [s, addDays(s,1)] }
+  if(state.view==='month'){ const s=startOfMonth(state.anchor); const e=startOfMonth(addDays(s,40)); return [startOfWeek(s), e] }
+  const s=startOfWeek(state.anchor); return [s, addDays(s,7)]
+}
+async function loadAppts(){
+  const [from,to]=rangeBounds()
+  state.appts = await safe(()=>db.listAppointments({ from:from.toISOString(), to:to.toISOString(), practitionerId:state.practitionerId||null })) || []
+}
+
+function rangeLabel(){
+  const [s]=rangeBounds()
+  if(state.view==='day'){ const d=startOfDay(state.anchor); return DAYS[d.getDay()]+' '+MONTHS[d.getMonth()]+' '+d.getDate() }
+  if(state.view==='month'){ const m=startOfMonth(state.anchor); return MONTHS[m.getMonth()]+' '+m.getFullYear() }
+  const w=startOfWeek(state.anchor), e=addDays(w,6)
+  return MONTHS[w.getMonth()]+' '+w.getDate()+' – '+(w.getMonth()===e.getMonth()?'':MONTHS[e.getMonth()]+' ')+e.getDate()
+}
+
+function renderApp(){
+  $('root').innerHTML=`
+    <header class="bar">
+      <span class="bar-title">Appointments</span>
+      <div class="seg"><button data-v="day">Day</button><button data-v="week">Week</button><button data-v="month">Month</button></div>
+      <button class="navbtn" id="prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      <button class="today-btn" id="today">Today</button>
+      <button class="navbtn" id="next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      <span class="range mono" id="rangeLabel"></span>
+      <div class="spacer"></div>
+      <select class="filter-sel" id="practFilter"><option value="">All practitioners</option>${state.practitioners.map(p=>`<option value="${p.id}">${esc(p.full_name)}</option>`).join('')}</select>
+      <button class="btn btn-primary" id="newA">+ New appointment</button>
+      <span class="who">${esc(state.me.full_name)}<span class="role-pill">${esc(state.me.role)}</span></span>
+      <button class="btn btn-quiet" id="signout">Sign out</button>
+    </header>
+    <div id="main"></div>`
+  const setView=(v)=>{ state.view=v; document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); refresh() }
+  document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>setView(b.dataset.v))
+  document.querySelector(`.seg button[data-v="${state.view}"]`).classList.add('on')
+  $('prev').onclick=()=>{ state.anchor=shift(-1); refresh() }
+  $('next').onclick=()=>{ state.anchor=shift(1); refresh() }
+  $('today').onclick=()=>{ state.anchor=startOfDay(new Date()); refresh() }
+  $('practFilter').value=state.practitionerId
+  $('practFilter').onchange=(e)=>{ state.practitionerId=e.target.value; refresh() }
+  $('newA').onclick=()=>apptModal(null,{})
+  $('signout').onclick=async()=>{ await db.signOut(); location.reload() }
+}
+function shift(dir){
+  if(state.view==='day') return addDays(state.anchor,dir)
+  if(state.view==='month'){ const m=startOfMonth(state.anchor); m.setMonth(m.getMonth()+dir); return m }
+  return addDays(state.anchor,7*dir)
+}
+async function refresh(){ $('rangeLabel') && ($('rangeLabel').textContent=rangeLabel()); await loadAppts(); renderBody() }
+
+function demoBanner(){ const m=$('main'); if(!m)return; const b=document.createElement('div')
+  b.textContent='Demo mode — sample data, nothing is saved. Add Supabase keys to connect the real database.'
+  b.style.cssText='background:var(--amber-bg);color:var(--amber);padding:8px 18px;font-size:13px;text-align:center;border-bottom:1px solid #EAD9BC'; m.prepend(b) }
+
+function renderBody(){
+  $('rangeLabel') && ($('rangeLabel').textContent=rangeLabel())
+  if(state.view==='month') return renderMonth()
+  return renderTimeGrid()
+}
+
+// ---- day / week grid (engine adapted from clients.html) -------------
+function renderTimeGrid(){
+  const main=$('main'); const banner=main.querySelector('div[style]'); // keep demo banner if present
+  const now=new Date()
+  const days = state.view==='day' ? [startOfDay(state.anchor)]
+    : Array.from({length:7},(_,i)=>addDays(startOfWeek(state.anchor),i))
+  const buckets = days.map(()=>[])
+  state.appts.forEach(a=>{ const d=new Date(a.start_time); const i=days.findIndex(x=>sameDay(x,d)); if(i>=0) buckets[i].push(a) })
+
+  let head='<div class="cal-stick"><div class="cal-row"><div class="gutter-cell"></div>'
+  days.forEach(d=>{ const t=sameDay(d,now); head+=`<div class="dayhead${t?' today':''}"><div class="dow">${DAYS[d.getDay()]}</div><div class="dnum">${d.getDate()}</div></div>` })
+  head+='</div></div>'
+  let gutter='<div class="cal-gutter">'; for(let h=0;h<24;h++) gutter+=`<div class="hour-cell"><span>${h===0?'':hourLabel(h)}</span></div>`; gutter+='</div>'
+
+  let cols=''
+  days.forEach((d,i)=>{
+    const isToday=sameDay(d,now)
+    const evs=buckets[i].map(a=>{ const s=new Date(a.start_time), e=new Date(a.end_time||a.start_time)
+      const sm=s.getHours()*60+s.getMinutes(); let em=e.getHours()*60+e.getMinutes(); if(em<=sm) em=sm+30
+      return { a, start:sm, end:Math.min(1440,em) } })
+    layoutLanes(evs)
+    let blocks=''
+    evs.forEach(ev=>{ const a=ev.a; const top=(ev.start/60)*HOUR; const h=Math.max(20,((ev.end-ev.start)/60)*HOUR-2)
+      const R=0.92, w=(100/ev.cols)*R, left=ev.lane*(100/ev.cols)*R; const col=a.appointment_type?.color||'#1F5F54'
+      blocks+=`<div class="event" data-id="${a.id}" style="top:${top}px;height:${h}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px);background:${tint(col)};border-left:3px solid ${col};color:var(--ink)">
+        ${a.is_confirmed?'<span class="ev-check" style="color:'+col+'">✓</span>':''}
+        <div class="ev-time">${fmtTime(new Date(a.start_time))}</div>
+        <div class="ev-name">${esc(a.patient?.full_name||'Patient')}</div></div>` })
+    let nl=''; if(isToday){ const nm=now.getHours()*60+now.getMinutes(); nl=`<div class="now-line" style="top:${(nm/60)*HOUR}px"></div>` }
+    cols+=`<div class="day-col${isToday?' today':''}" style="height:${24*HOUR}px" data-day="${i}">${nl}${blocks}</div>`
+  })
+
+  const cal=document.createElement('div'); cal.className='cal'; cal.id='calScroll'
+  cal.innerHTML=head+'<div class="cal-body">'+gutter+cols+'</div>'
+  main.innerHTML=''; if(banner) main.appendChild(banner); main.appendChild(cal)
+
+  cal.querySelectorAll('.event').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); apptModal(el.dataset.id,{}) })
+  cal.querySelectorAll('.day-col').forEach(col=>col.onclick=(e)=>{ if(e.target!==col) return
+    const d=days[+col.dataset.day]; const rect=col.getBoundingClientRect(); let hr=Math.floor((e.clientY-rect.top)/HOUR); hr=Math.max(0,Math.min(23,hr))
+    apptModal(null,{ date:isoLocalDate(d), time:String(hr).padStart(2,'0')+':00' }) })
+  const startH = days.some(d=>sameDay(d,now)) ? Math.max(0,now.getHours()-1) : 8
+  cal.scrollTop=startH*HOUR
+}
+
+function layoutLanes(evs){
+  evs.sort((a,b)=>a.start-b.start||a.end-b.end)
+  let cluster=[],curEnd=-1; const clusters=[]
+  for(const ev of evs){ if(cluster.length&&ev.start>=curEnd){clusters.push(cluster);cluster=[];curEnd=-1} cluster.push(ev); curEnd=Math.max(curEnd,ev.end) }
+  if(cluster.length) clusters.push(cluster)
+  for(const cl of clusters){ const laneEnd=[]
+    for(const ev of cl){ let placed=false; for(let i=0;i<laneEnd.length;i++){ if(laneEnd[i]<=ev.start){ev.lane=i;laneEnd[i]=ev.end;placed=true;break} } if(!placed){ev.lane=laneEnd.length;laneEnd.push(ev.end)} }
+    cl.forEach(ev=>ev.cols=laneEnd.length) }
+}
+
+// ---- month grid ------------------------------------------------------
+function renderMonth(){
+  const main=$('main'); const banner=main.querySelector('div[style]')
+  const now=new Date(), first=startOfMonth(state.anchor), gridStart=startOfWeek(first)
+  const cells=Array.from({length:42},(_,i)=>addDays(gridStart,i))
+  const byDay={}; state.appts.forEach(a=>{ const k=isoLocalDate(new Date(a.start_time)); (byDay[k]=byDay[k]||[]).push(a) })
+
+  let html='<div class="month"><div class="month-grid">'
+  DAYS.forEach(d=>html+=`<div class="mh">${d}</div>`)
+  cells.forEach(d=>{
+    const dim=d.getMonth()!==first.getMonth(), today=sameDay(d,now)
+    const list=(byDay[isoLocalDate(d)]||[]).sort((a,b)=>new Date(a.start_time)-new Date(b.start_time))
+    const chips=list.slice(0,3).map(a=>{ const col=a.appointment_type?.color||'#1F5F54'
+      return `<div class="mchip" data-id="${a.id}" style="background:${tint(col)};color:${col}">${fmtTime(new Date(a.start_time))} ${esc(a.patient?.full_name||'')}</div>` }).join('')
+    const more=list.length>3?`<div class="mmore">+${list.length-3} more</div>`:''
+    html+=`<div class="mcell${dim?' dim':''}${today?' today':''}" data-date="${isoLocalDate(d)}"><span class="mdate">${d.getDate()}</span>${chips}${more}</div>`
+  })
+  html+='</div></div>'
+  main.innerHTML=''; if(banner) main.appendChild(banner)
+  const wrap=document.createElement('div'); wrap.style.cssText='height:100%;overflow:auto'; wrap.innerHTML=html; main.appendChild(wrap)
+
+  wrap.querySelectorAll('.mchip').forEach(c=>c.onclick=(e)=>{ e.stopPropagation(); apptModal(c.dataset.id,{}) })
+  wrap.querySelectorAll('.mcell').forEach(c=>c.onclick=()=>{ state.view='day'; state.anchor=startOfDay(new Date(c.dataset.date+'T00:00')); document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.v==='day')); refresh() })
+}
+
+// ---- appointment modal ----------------------------------------------
+async function apptModal(id, opts){
+  const editing=!!id
+  let appt=null
+  if(editing){ appt=await safe(()=>db.getAppointment(id)); if(!appt) return }
+  let selPatient = appt ? { id:appt.patient_id, full_name:(state.appts.find(a=>a.id===id)?.patient?.full_name)||'' } : null
+  let confirmed = editing ? !!appt.is_confirmed : false
+
+  const startDate = appt ? isoLocalDate(new Date(appt.start_time)) : (opts.date||isoLocalDate(new Date()))
+  const startTime = appt ? new Date(appt.start_time).toTimeString().slice(0,5) : (opts.time||'09:00')
+
+  modal(`<h3>${editing?'Edit appointment':'New appointment'}</h3>
+    <label class="lbl">Patient</label>
+    <div class="combo" id="pcombo"><input class="field" id="pInput" placeholder="Search patient…" autocomplete="off" value="${esc(selPatient?.full_name||'')}"/>
+      <div class="combo-pop" id="pPop" hidden></div></div>
+    <div class="two-col">
+      <div><label class="lbl">Practitioner</label><select class="field" id="aPract">${state.practitioners.map(p=>`<option value="${p.id}" ${appt&&appt.practitioner_id===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('')}</select></div>
+      <div><label class="lbl">Type</label><select class="field" id="aType">${state.types.map(t=>`<option value="${t.id}" data-dur="${t.duration_minutes}" ${appt&&appt.appointment_type_id===t.id?'selected':''}>${esc(t.name)} · ${t.duration_minutes}m</option>`).join('')}</select></div>
+      <div><label class="lbl">Date</label><input class="field" id="aDate" type="date" value="${startDate}"/></div>
+      <div><label class="lbl">Time</label><input class="field" id="aTime" type="time" value="${startTime}"/></div>
+    </div>
+    <label class="lbl">Reason</label><input class="field" id="aReason" value="${esc(appt?.reason||'')}" placeholder="Chief complaint / purpose"/>
+    <label class="lbl">Confirmation</label>
+    <button type="button" class="toggle${confirmed?' on':''}" id="aConfirm"><span id="aConfirmLbl">${confirmed?'Confirmed':'Mark confirmed'}</span></button>
+    <div class="err" id="aErr"></div>
+    <div class="modal-actions">${editing?'<button class="btn btn-quiet btn-danger left" id="aCancel">Cancel appointment</button>':''}
+      <button class="btn btn-ghost" id="aClose">Close</button>
+      <button class="btn btn-primary" id="aSave">${editing?'Save':'Create'}</button></div>`)
+
+  // patient combo
+  const inp=$('pInput'), pop=$('pPop')
+  async function drawPatients(){
+    const rows = await safe(()=>db.listPatients({ search: inp.value.trim() })) || []
+    pop.innerHTML = rows.length ? rows.slice(0,8).map(r=>`<div class="combo-opt${selPatient&&selPatient.id===r.id?' sel':''}" data-id="${r.id}" data-name="${esc(r.full_name)}"><div class="co-name">${esc(r.full_name)}</div>${r.phone||r.email?`<div class="co-sub">${esc(r.phone||r.email)}</div>`:''}</div>`).join('') : '<div class="co-sub" style="padding:10px">No matches.</div>'
+    pop.querySelectorAll('.combo-opt').forEach(o=>o.onclick=()=>{ selPatient={id:o.dataset.id,full_name:o.dataset.name}; inp.value=o.dataset.name; pop.hidden=true; $('aErr').textContent='' })
+    pop.hidden=false
+  }
+  inp.onfocus=drawPatients; inp.oninput=()=>{ selPatient=null; drawPatients() }
+  modalBox.onclick=(e)=>{ if(!e.target.closest('#pcombo')) pop.hidden=true }
+
+  const cBtn=$('aConfirm'); cBtn.onclick=()=>{ confirmed=!confirmed; cBtn.classList.toggle('on',confirmed); $('aConfirmLbl').textContent=confirmed?'Confirmed':'Mark confirmed' }
+  $('aClose').onclick=closeModal
+  $('aSave').onclick=async()=>{
+    if(!selPatient){ $('aErr').textContent='Please choose a patient.'; return }
+    const date=$('aDate').value, time=$('aTime').value
+    if(!date||!time){ $('aErr').textContent='Please set a date and time.'; return }
+    const typeOpt=$('aType').selectedOptions[0]; const dur=parseInt(typeOpt?.dataset.dur||'30',10)
+    const start=new Date(date+'T'+time); const end=new Date(start.getTime()+dur*60000)
+    const practId=$('aPract').value
+    // soft double-booking guard for the same practitioner
+    const clash=state.appts.some(a=> a.id!==id && a.practitioner_id===practId &&
+      (new Date(a.start_time) < end && new Date(a.end_time||a.start_time) > start))
+    if(clash){ $('aErr').textContent='That practitioner already has an overlapping appointment.'; return }
+    const fields={ patient_id:selPatient.id, practitioner_id:practId, appointment_type_id:$('aType').value,
+      start_time:start.toISOString(), end_time:end.toISOString(), reason:$('aReason').value.trim(), is_confirmed:confirmed }
+    try{
+      if(editing) await db.updateAppointment(id, fields); else await db.createAppointment(fields)
+      closeModal(); toast(editing?'Appointment saved':'Appointment created'); await refresh()
+    }catch(e){ $('aErr').textContent=e.message }
+  }
+  $('aCancel') && ($('aCancel').onclick=async()=>{ await safe(()=>db.cancelAppointment(id)); closeModal(); toast('Appointment cancelled'); await refresh() })
+}
+
+// ---- helpers ----
+function isoLocalDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}` }
+const scrim=$('scrim'), modalBox=$('modalBox')
+function modal(html){ modalBox.innerHTML=html; scrim.classList.add('open') }
+function closeModal(){ scrim.classList.remove('open'); modalBox.innerHTML=''; modalBox.onclick=null }
+scrim.onclick=(e)=>{ if(e.target===scrim) closeModal() }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal() })
+</script>
+</body>
+</html>
