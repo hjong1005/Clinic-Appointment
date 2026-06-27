@@ -30,7 +30,7 @@
   .field{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
   .field:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px var(--pine-bg)}
 
-  header.bar{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--paper);min-height:60px}
+  header.bar{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--paper);min-height:60px;position:relative}
   .bar-title{font-family:"Fraunces",serif;font-weight:500;font-size:20px}
   .who{margin-left:auto;font-size:13px;color:var(--muted)}
   .role-pill{font-size:11px;font-weight:600;color:var(--pine-700);background:var(--pine-bg);padding:2px 9px;border-radius:20px;margin-left:6px;text-transform:capitalize}
@@ -160,7 +160,8 @@ function renderLogin(){
 function renderApp(){
   $('root').innerHTML = `
     <header class="bar">
-      <span class="bar-title">Patients</span>
+      <a class="bar-title" href="admin.html" style="text-decoration:none;color:var(--ink)">Clinic</a>
+      <span class="bar-title" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px">Patients</span>
       <button class="btn btn-primary" id="newPatient">+ New patient</button>
       <span class="who">${esc(state.me.full_name)}<span class="role-pill">${esc(state.me.role)}</span></span>
       <button class="btn btn-quiet" id="signout">Sign out</button>
