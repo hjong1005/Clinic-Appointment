@@ -163,6 +163,7 @@ function renderApp(){
     <header class="bar">
       <a class="bar-title" href="admin.html" style="text-decoration:none;color:var(--ink)">Clinic</a>
       <span class="bar-title" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:24px">Patients</span>
+      <button class="btn btn-ghost" id="importPatients">Import</button>
       <button class="btn btn-primary" id="newPatient">+ New patient</button>
       <span class="who">${esc(state.me.full_name)}<span class="role-pill">${esc(state.me.role)}</span></span>
       <button class="btn btn-quiet" id="signout">Sign out</button>
@@ -180,6 +181,7 @@ function renderApp(){
     </div></div>`
   $('signout').onclick = async ()=>{ await db.signOut(); location.reload() }
   $('newPatient').onclick = ()=> patientModal(null)
+  $('importPatients').onclick = ()=> importModal()
   $('search').oninput = (e)=>{ state.search=e.target.value; loadList() }
   $('segA').onclick = ()=>{ state.archived=false; $('segA').classList.add('on'); $('segArch').classList.remove('on'); loadList() }
   $('segArch').onclick = ()=>{ state.archived=true; $('segArch').classList.add('on'); $('segA').classList.remove('on'); loadList() }
@@ -345,6 +347,151 @@ function confirmDelete(p){
   $('dy').onclick = async ()=>{
     try{ await db.deletePatient(p.id); closeModal(); state.selected=null; state.patient=null; toast('Patient deleted'); loadList(); renderDetail() }
     catch(e){ $('de').textContent = e.message }
+  }
+}
+
+// ---- bulk import from CSV / Excel ----
+// Recognised header names (case/space/underscore-insensitive) → patient field.
+const IMPORT_ALIASES = {
+  full_name:['full name','name','patient name','fullname'],
+  date_of_birth:['date of birth','dob','birthdate','birth date'],
+  gender:['gender','sex'],
+  phone:['phone','mobile','contact','phone number','contact number','tel','telephone'],
+  email:['email','e mail','email address'],
+  emergency_contact_name:['emergency contact','emergency contact name','emergency name','next of kin'],
+  emergency_contact_phone:['emergency phone','emergency contact phone','emergency number','next of kin phone']
+}
+
+// Minimal RFC-4180-ish CSV parser (handles quotes, commas and newlines in fields).
+function parseCSV(text){
+  const rows=[]; let row=[], field='', inQ=false; text=text.replace(/\r\n?/g,'\n')
+  for(let i=0;i<text.length;i++){ const c=text[i]
+    if(inQ){ if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++ } else inQ=false } else field+=c; continue }
+    if(c==='"') inQ=true
+    else if(c===',') { row.push(field); field='' }
+    else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field='' }
+    else field+=c
+  }
+  if(field!==''||row.length){ row.push(field); rows.push(row) }
+  return rows
+}
+
+// Reads a File into an array of string rows. Excel support is loaded on demand.
+async function readImportFile(file){
+  const name=file.name.toLowerCase()
+  let rows
+  if(name.endsWith('.csv')){
+    rows=parseCSV(await file.text())
+  } else {
+    const XLSX=await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs')
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true})
+    const ws=wb.Sheets[wb.SheetNames[0]]
+    rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''})
+  }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==''))
+}
+
+function mapImportHeaders(headers){
+  const norm=s=>String(s||'').trim().toLowerCase().replace(/[_\s\-]+/g,' ')
+  return headers.map(h=>{ const n=norm(h)
+    for(const [field,aliases] of Object.entries(IMPORT_ALIASES)) if(aliases.includes(n)) return field
+    return null })
+}
+
+function importGender(v){ const s=String(v||'').trim().toLowerCase()
+  if(s==='m'||s==='male') return 'Male'
+  if(s==='f'||s==='female') return 'Female'
+  return s ? 'Others' : '' }
+
+// Coerce common date inputs to YYYY-MM-DD (assumes day-first for slashed dates).
+function importDate(v){ const s=String(v||'').trim(); if(!s) return ''
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/)
+  if(m){ let day=+m[1], mon=+m[2], y=m[3]; if(y.length===2) y='20'+y
+    if(mon>12&&day<=12){ const t=day; day=mon; mon=t }
+    return `${y}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}` }
+  const dt=new Date(s); return isNaN(dt) ? '' : dt.toISOString().slice(0,10)
+}
+
+// Duplicate detection — a row matches an existing patient when the
+// name+DOB key matches, or a normalised phone number matches.
+const dupNameKey=(name,dob)=>{ const n=String(name||'').trim().toLowerCase().replace(/\s+/g,' '); return n ? n+'|'+String(dob||'').slice(0,10) : '' }
+const dupPhoneKey=(ph)=>{ const d=String(ph||'').replace(/\D/g,''); return d.length>=6 ? d : '' }
+async function loadExistingPatientKeys(){
+  const [active,archived]=await Promise.all([
+    safe(()=>db.listPatients({ search:'', archived:false })),
+    safe(()=>db.listPatients({ search:'', archived:true }))
+  ])
+  const names=new Set(), phones=new Set()
+  for(const p of [...(active||[]),...(archived||[])]){
+    const nk=dupNameKey(p.full_name,p.date_of_birth); if(nk) names.add(nk)
+    const pk=dupPhoneKey(p.phone); if(pk) phones.add(pk)
+  }
+  return { names, phones }
+}
+
+function rowToPatient(row,map){
+  const get=field=>{ const i=map.indexOf(field); return i>=0 ? String(row[i]??'').trim() : '' }
+  return { full_name:get('full_name'), date_of_birth:importDate(get('date_of_birth')),
+    gender:importGender(get('gender')), phone:get('phone'), email:get('email'),
+    emergency_contact_name:get('emergency_contact_name'), emergency_contact_phone:get('emergency_contact_phone') }
+}
+
+function importModal(){
+  modal(`<h3>Import patients</h3>
+    <p style="color:var(--muted);font-size:13.5px;line-height:1.55;margin:0 0 14px">
+      Upload a <strong>.csv</strong> or Excel <strong>.xlsx</strong> file. The first row must be column headers.
+      Recognised columns: <em>Full name</em> (required), Date of birth, Gender, Phone, Email, Emergency contact, Emergency phone.
+      <a href="./templates/patient-import-template.csv" download>Download template</a>.</p>
+    <input class="field" id="impFile" type="file" accept=".csv,.xlsx,.xls" style="padding:9px"/>
+    <div class="err" id="impErr"></div>
+    <div id="impResult" style="font-size:13.5px;color:var(--muted);margin-top:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="impClose">Close</button>
+      <button class="btn btn-primary" id="impRun" disabled>Import</button>
+    </div>`)
+  let parsed=[], dupCount=0
+  const errEl=$('impErr'), resEl=$('impResult'), runBtn=$('impRun')
+  $('impClose').onclick=closeModal
+  $('impFile').onchange=async(e)=>{
+    errEl.textContent=''; resEl.textContent=''; runBtn.disabled=true; parsed=[]; dupCount=0
+    const file=e.target.files[0]; if(!file) return
+    resEl.textContent='Reading file…'
+    try{
+      const rows=await readImportFile(file)
+      if(rows.length<2){ resEl.textContent=''; errEl.textContent='The file has no data rows below the header.'; return }
+      const map=mapImportHeaders(rows[0])
+      if(!map.includes('full_name')){ resEl.textContent=''; errEl.textContent='Could not find a “Full name” column in the header row.'; return }
+      const candidates=rows.slice(1).map(r=>rowToPatient(r,map)).filter(p=>p.full_name)
+      if(!candidates.length){ resEl.textContent=''; errEl.textContent='No rows with a full name were found.'; return }
+      // Skip rows that already exist in the database (or repeat within the file).
+      resEl.textContent='Checking for duplicates…'
+      const existing=await loadExistingPatientKeys()
+      for(const p of candidates){
+        const nk=dupNameKey(p.full_name,p.date_of_birth), pk=dupPhoneKey(p.phone)
+        if((nk&&existing.names.has(nk))||(pk&&existing.phones.has(pk))){ dupCount++; continue }
+        if(nk) existing.names.add(nk); if(pk) existing.phones.add(pk)
+        parsed.push(p)
+      }
+      const dupNote=dupCount?` <span style="color:var(--muted)">(${dupCount} duplicate${dupCount>1?'s':''} will be skipped)</span>`:''
+      if(!parsed.length){ resEl.innerHTML=`All ${candidates.length} row(s) already exist — nothing to import.`; return }
+      resEl.innerHTML=`Ready to import <strong>${parsed.length}</strong> patient(s).${dupNote}`
+      runBtn.disabled=false
+    }catch(err){ resEl.textContent=''; errEl.textContent='Could not read the file: '+(err.message||err) }
+  }
+  runBtn.onclick=async()=>{
+    runBtn.disabled=true; runBtn.textContent='Importing…'; errEl.textContent=''
+    let ok=0; const fails=[]
+    for(let i=0;i<parsed.length;i++){
+      try{ await db.createPatient(parsed[i]); ok++ }
+      catch(err){ fails.push(`${parsed[i].full_name}: ${err.message||err}`) }
+    }
+    await loadList()
+    resEl.innerHTML=`Imported <strong>${ok}</strong> of ${parsed.length}.`+
+      (dupCount?` ${dupCount} duplicate${dupCount>1?'s':''} skipped.`:'')+
+      (fails.length?`<div style="margin-top:6px;color:var(--danger)">${fails.slice(0,5).map(esc).join('<br>')}${fails.length>5?`<br>…and ${fails.length-5} more`:''}</div>`:'')
+    runBtn.textContent='Import'
+    if(ok&&!fails.length){ toast(`Imported ${ok} patient(s)`); }
   }
 }
 
