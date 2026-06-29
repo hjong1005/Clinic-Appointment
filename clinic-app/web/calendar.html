@@ -84,6 +84,7 @@
   .modal h3{font-family:"Fraunces",serif;font-weight:500;font-size:20px;margin:0 0 16px}
   .lbl{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:12px 0 5px}
   .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .time-split{display:flex;align-items:center;gap:6px} .time-split .time-seg{flex:1;text-align:center} .time-colon{color:var(--muted);font-weight:600}
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px} .modal-actions .left{margin-right:auto}
   .err{color:var(--danger);font-size:13px;min-height:16px;margin-top:8px}
   .combo{position:relative}
@@ -314,7 +315,13 @@ async function apptModal(id, opts){
       <div><label class="lbl">Practitioner</label><select class="field" id="aPract">${state.practitioners.map(p=>`<option value="${p.id}" ${appt&&appt.practitioner_id===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('')}</select></div>
       <div><label class="lbl">Type</label><select class="field" id="aType">${state.types.map(t=>`<option value="${t.id}" data-dur="${t.duration_minutes}" ${appt&&appt.appointment_type_id===t.id?'selected':''}>${esc(t.name)} · ${t.duration_minutes}m</option>`).join('')}</select></div>
       <div><label class="lbl">Date</label><input class="field" id="aDate" type="date" value="${startDate}"/></div>
-      <div><label class="lbl">Time</label><input class="field" id="aTime" type="time" value="${startTime}"/></div>
+      <div><label class="lbl">Time</label>
+        <div class="time-split">
+          <input class="field time-seg" id="aHour" inputmode="numeric" maxlength="2" value="${startTime.split(':')[0]}" aria-label="Hour" placeholder="HH"/>
+          <span class="time-colon">:</span>
+          <input class="field time-seg" id="aMin" inputmode="numeric" maxlength="2" value="${startTime.split(':')[1]}" aria-label="Minutes" placeholder="MM"/>
+        </div>
+      </div>
     </div>
     <label class="lbl">Reason</label><input class="field" id="aReason" value="${esc(appt?.reason||'')}" placeholder="Chief complaint / purpose"/>
     <label class="lbl">Confirmation</label>
@@ -335,12 +342,22 @@ async function apptModal(id, opts){
   inp.onfocus=drawPatients; inp.oninput=()=>{ selPatient=null; drawPatients() }
   modalBox.onclick=(e)=>{ if(!e.target.closest('#pcombo')) pop.hidden=true }
 
+  // time entry: jump from hour to minutes once two digits are typed
+  const hourEl=$('aHour'), minEl=$('aMin')
+  const onlyDigits=el=>{ el.value=el.value.replace(/\D/g,'').slice(0,2) }
+  hourEl.oninput=()=>{ onlyDigits(hourEl); if(hourEl.value.length===2){ minEl.focus(); minEl.select() } }
+  minEl.oninput=()=>{ onlyDigits(minEl) }
+  hourEl.onblur=()=>{ if(hourEl.value!=='') hourEl.value=String(Math.min(23,parseInt(hourEl.value,10)||0)).padStart(2,'0') }
+  minEl.onblur=()=>{ if(minEl.value!=='') minEl.value=String(Math.min(59,parseInt(minEl.value,10)||0)).padStart(2,'0') }
+
   const cBtn=$('aConfirm'); cBtn.onclick=()=>{ confirmed=!confirmed; cBtn.classList.toggle('on',confirmed); $('aConfirmLbl').textContent=confirmed?'Confirmed':'Mark confirmed' }
   $('aClose').onclick=closeModal
   $('aSave').onclick=async()=>{
     if(!selPatient){ $('aErr').textContent='Please choose a patient.'; return }
-    const date=$('aDate').value, time=$('aTime').value
-    if(!date||!time){ $('aErr').textContent='Please set a date and time.'; return }
+    const date=$('aDate').value
+    const H=parseInt($('aHour').value,10), M=parseInt($('aMin').value,10)
+    if(!date || Number.isNaN(H) || Number.isNaN(M) || H<0 || H>23 || M<0 || M>59){ $('aErr').textContent='Please set a valid date and time (HH 00–23, MM 00–59).'; return }
+    const time=String(H).padStart(2,'0')+':'+String(M).padStart(2,'0')
     const typeOpt=$('aType').selectedOptions[0]; const dur=parseInt(typeOpt?.dataset.dur||'30',10)
     const start=new Date(date+'T'+time); const end=new Date(start.getTime()+dur*60000)
     const practId=$('aPract').value
