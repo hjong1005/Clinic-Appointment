@@ -58,7 +58,7 @@
   .cal-gutter{width:52px;flex:none;position:sticky;left:0;z-index:2;background:var(--surface)}
   .hour-cell{height:var(--hour);position:relative}
   .hour-cell span{position:absolute;top:-7px;right:8px;font-size:10.5px;color:var(--faint)}
-  .day-col{flex:1 1 0;min-width:80px;position:relative;border-left:1px solid var(--line-soft);
+  .day-col{flex:1 1 0;min-width:80px;position:relative;overflow:hidden;border-left:1px solid var(--line-soft);
     background-image:repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hour) - 1px), var(--line-soft) calc(var(--hour) - 1px), var(--line-soft) var(--hour))}
   .day-col.today{background-color:#FCFBF7}
   .now-line{position:absolute;left:0;right:0;height:2px;background:var(--danger);z-index:3}
@@ -113,6 +113,13 @@ const $ = (id)=>document.getElementById(id)
 const esc = (s)=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const HOUR=48
+// ── Calendar day window ────────────────────────────────────────────────
+// The hours shown in the Day/Week time grid. DAY_START_HOUR is the first
+// hour displayed and DAY_END_HOUR is the closing time, both on a 24-hour
+// clock (0–24). E.g. 8 and 22 → the calendar runs 8 AM to 10 PM.
+// See docs/customization.md ("Calendar hours") for how to change these.
+const DAY_START_HOUR=8
+const DAY_END_HOUR=22
 const startOfDay=(d)=>{const x=new Date(d);x.setHours(0,0,0,0);return x}
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x}
 const startOfWeek=(d)=>addDays(startOfDay(d),-startOfDay(d).getDay())
@@ -221,7 +228,7 @@ function renderTimeGrid(){
   let head='<div class="cal-stick"><div class="cal-row"><div class="gutter-cell"></div>'
   days.forEach(d=>{ const t=sameDay(d,now); head+=`<div class="dayhead${t?' today':''}"><div class="dow">${DAYS[d.getDay()]}</div><div class="dnum">${d.getDate()}</div></div>` })
   head+='</div></div>'
-  let gutter='<div class="cal-gutter">'; for(let h=0;h<24;h++) gutter+=`<div class="hour-cell"><span>${h===0?'':hourLabel(h)}</span></div>`; gutter+='</div>'
+  let gutter='<div class="cal-gutter">'; for(let h=DAY_START_HOUR;h<DAY_END_HOUR;h++) gutter+=`<div class="hour-cell"><span>${hourLabel(h)}</span></div>`; gutter+='</div>'
 
   let cols=''
   days.forEach((d,i)=>{
@@ -231,14 +238,14 @@ function renderTimeGrid(){
       return { a, start:sm, end:Math.min(1440,em) } })
     layoutLanes(evs)
     let blocks=''
-    evs.forEach(ev=>{ const a=ev.a; const top=(ev.start/60)*HOUR; const h=Math.max(20,((ev.end-ev.start)/60)*HOUR-2)
+    evs.forEach(ev=>{ const a=ev.a; const top=((ev.start-DAY_START_HOUR*60)/60)*HOUR; const h=Math.max(20,((ev.end-ev.start)/60)*HOUR-2)
       const R=0.92, w=(100/ev.cols)*R, left=ev.lane*(100/ev.cols)*R; const col=a.appointment_type?.color||'#1F5F54'
       blocks+=`<div class="event" data-id="${a.id}" style="top:${top}px;height:${h}px;left:calc(${left}% + 1px);width:calc(${w}% - 2px);background:${tint(col)};border-left:3px solid ${col};color:var(--ink)">
         ${a.is_confirmed?'<span class="ev-check" style="color:'+col+'">✓</span>':''}
         <div class="ev-time">${fmtTime(new Date(a.start_time))}</div>
         <div class="ev-name">${esc(a.patient?.full_name||'Patient')}</div></div>` })
-    let nl=''; if(isToday){ const nm=now.getHours()*60+now.getMinutes(); nl=`<div class="now-line" style="top:${(nm/60)*HOUR}px"></div>` }
-    cols+=`<div class="day-col${isToday?' today':''}" style="height:${24*HOUR}px" data-day="${i}">${nl}${blocks}</div>`
+    let nl=''; if(isToday){ const nm=now.getHours()*60+now.getMinutes(); nl=`<div class="now-line" style="top:${((nm-DAY_START_HOUR*60)/60)*HOUR}px"></div>` }
+    cols+=`<div class="day-col${isToday?' today':''}" style="height:${(DAY_END_HOUR-DAY_START_HOUR)*HOUR}px" data-day="${i}">${nl}${blocks}</div>`
   })
 
   const cal=document.createElement('div'); cal.className='cal'; cal.id='calScroll'
@@ -247,9 +254,9 @@ function renderTimeGrid(){
 
   cal.querySelectorAll('.event').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); apptModal(el.dataset.id,{}) })
   cal.querySelectorAll('.day-col').forEach(col=>col.onclick=(e)=>{ if(e.target!==col) return
-    const d=days[+col.dataset.day]; const rect=col.getBoundingClientRect(); let hr=Math.floor((e.clientY-rect.top)/HOUR); hr=Math.max(0,Math.min(23,hr))
+    const d=days[+col.dataset.day]; const rect=col.getBoundingClientRect(); let hr=DAY_START_HOUR+Math.floor((e.clientY-rect.top)/HOUR); hr=Math.max(DAY_START_HOUR,Math.min(DAY_END_HOUR-1,hr))
     apptModal(null,{ date:isoLocalDate(d), time:String(hr).padStart(2,'0')+':00' }) })
-  const startH = days.some(d=>sameDay(d,now)) ? Math.max(0,now.getHours()-1) : 8
+  const startH = days.some(d=>sameDay(d,now)) ? Math.max(0,now.getHours()-1-DAY_START_HOUR) : 0
   cal.scrollTop=startH*HOUR
 }
 
