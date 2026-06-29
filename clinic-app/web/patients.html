@@ -28,6 +28,7 @@
   .btn-quiet{color:var(--muted);padding:7px 10px} .btn-quiet:hover{color:var(--ink);background:var(--line-soft)}
   .btn-danger{color:var(--danger)} .btn-danger:hover{background:var(--danger-bg)}
   .field{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+  select.field{-webkit-appearance:none;appearance:none}
   .field:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px var(--pine-bg)}
 
   header.bar{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--paper);min-height:60px;position:relative}
@@ -309,7 +310,7 @@ function patientModal(p){
     <label class="lbl">Full name</label><input class="field" id="f_name" value="${esc(p?.full_name||'')}"/>
     <div class="grid2">
       <div><label class="lbl">Date of birth</label><input class="field" id="f_dob" type="date" value="${esc(p?.date_of_birth||'')}"/></div>
-      <div><label class="lbl">Gender</label><input class="field" id="f_gender" value="${esc(p?.gender||'')}"/></div>
+      <div><label class="lbl">Gender</label><select class="field" id="f_gender"><option value="">Select…</option>${['Male','Female','Others'].map(g=>`<option ${p?.gender===g?'selected':''}>${g}</option>`).join('')}</select></div>
       <div><label class="lbl">Phone</label><input class="field" id="f_phone" value="${esc(p?.phone||'')}"/></div>
       <div><label class="lbl">Email</label><input class="field" id="f_email" value="${esc(p?.email||'')}"/></div>
       <div><label class="lbl">Emergency contact</label><input class="field" id="f_ecn" value="${esc(p?.emergency_contact_name||'')}"/></div>
